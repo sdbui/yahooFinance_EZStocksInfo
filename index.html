@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/moment/moment.js"></script>
+    <script>
+        $(function(){
+
+
+            $('#searchBtn').click(function(){
+                getStockInfo();
+            }); //end btn.click
+            $('#search').keydown(function(evt){
+                if(evt.which==13){
+                    getStockInfo()
+                }
+            });
+
+
+
+            function processResult(result){
+                var $display = $('<div id="display">');
+                var $name = $('<div id="name">');
+                var $current = $('<div id="current">');
+                var $time = $('<div id="time">');
+                var $diff = $('<div id="diff">');
+                var $diffpercent = $('<div id="diffpercent">');
+
+                var $list1 = $('<ul id="list1">');
+                var $open = $('<li id="open">');
+                var $yearhigh = $('<li id="yearhigh">');
+                var $yearlow = $('<li id="yearlow">');
+                var $prevclose = $('<li id="prevclose">');
+
+                var $list2 = $('<ul id="list2">');
+                var $peratio = $('<li id="peratio">');
+                var $marketcap = $('<li id="marketcap">');
+                var $high = $('<li id="high">');
+                var $low = $('<li id="low">');
+                var $listcontainer = $('<div>');
+
+                $name.html(result.query.results.quote.symbol).appendTo($display);
+                $time.html('As of: '+moment().format('MMMM Do YYYY, h:mm:ss a')).appendTo($display);
+
+                $current.html(result.query.results.quote.LastTradePriceOnly).appendTo($display);
+                Number(result.query.results.quote.ChangeRealtime).toFixed(2) > 0? ($diff.addClass('green'),$diffpercent.addClass('green')):($diff.addClass('red'),$diffpercent.addClass('red'));
+                $diff.html(Number(result.query.results.quote.ChangeRealtime).toFixed(2)).appendTo($display);
+                $diffpercent.html(result.query.results.quote.ChangeinPercent).appendTo($display);
+                $open.html('<span class="toLeft">Open</span><span>'+result.query.results.quote.Open+'</span>').appendTo($list1);
+                $high.html('<span class="toLeft">High</span><span>'+result.query.results.quote.DaysHigh+'</span>').appendTo($list1);
+                $low.html('<span class="toLeft">Low</span><span>'+result.query.results.quote.DaysLow+'</span>').appendTo($list1);
+                $prevclose.html('<span class="toLeft">Prev Close</span><span>'+result.query.results.quote.PreviousClose+'</span>').appendTo($list1);
+                $yearhigh.html('<span class="toLeft">Year High</span><span>'+result.query.results.quote.YearHigh+'</span>').appendTo($list2);
+                $yearlow.html('<span class="toLeft">Year Low</span><span>'+result.query.results.quote.YearLow+'</span>').appendTo($list2);
+                $peratio.html('<span class="toLeft">P/E</span><span>'+result.query.results.quote.PERatio+'</span>').appendTo($list2);
+                $marketcap.html('<span class="toLeft">Market Cap</span><span>'+result.query.results.quote.MarketCapitalization+'</span>').appendTo($list2);
+                $listcontainer.appendTo($display);
+                $list1.appendTo($listcontainer);
+                $list2.appendTo($listcontainer);
+                $('#footer').before($display);
+
+
+
+//                        $time.html(data.query.results.quote.ChangeinPercent).appendTo($display);
+
+
+                //add function to append to dimmerdiv
+                $display.click(function(){
+                    console.log(result);
+                    var $info_all = $('<div id="info_all">').
+                            append($('<div id="info_all_header">').html(result.query.results.quote.symbol));
+                    $info_all.append($('<div style="padding-top:35px;">')); //quick and dirty fix for padding after header
+
+                    for(var prop in result.query.results.quote){
+                        var $line = $('<div class="all_info_line">');
+                        var $prop = $('<div class="all_info_prop">').append(prop);
+                        var $val = $('<div class="all_info_val">').append(result.query.results.quote[prop]);
+                        $line.append($prop);
+                        $line.append($val);
+                        $info_all.append($line);
+                    }
+
+                    $info_all.click(function(evt){
+                        evt.stopPropagation();
+                    });
+                    $('#dimmer').append($info_all);
+                    $('#dimmer').fadeIn();
+                    $('#dimmer').click(function(){
+                        $(this).css({
+                            'display':'none'
+                        });
+                        $('#dimmer #info_all').remove();
+
+                    });
+
+                });
+
+            }
+
+
+
+            function getStockInfo(){
+                var result;
+                var symbol = $('#search').val();
+                var url = 'http://query.yahooapis.com/v1/public/yql';
+                var data = "select * from yahoo.finance.quotes where symbol in ('"+ symbol+"')";
+                var query = '?q='+ data + "&format=json&diagnostics=true&env=http://datatables.org/alltables.env";
+
+                var xhr = XMLHttpRequest();
+                var final = encodeURI(url+query);
+                xhr.open('GET',final,true);
+                xhr.onreadystatechange = function(){
+                    if(xhr.readyState ==4  && xhr.status ==200){
+                        console.log(xhr.responseText);
+                        result = JSON.parse(xhr.responseText);
+//                        console.log(data);
+                        processResult(result);
+//                        $display.appendTo($('#wrapper'));
+                    }
+                };
+                xhr.send();
+
+
+
+            }//end getstockinfo()
+        }); // end docready
+    </script>
+    <style>
+        body{
+            font-family: Avenir, Helvetica, sans-serif;
+            margin:0;
+            padding:0;
+            background-color: rgb(30,33,36);
+
+        }
+        .green{
+            color:green;
+        }
+        .red{
+            color: #d70000;
+        }
+
+        #container{
+            margin:0 auto;
+            width:80%;
+        }
+
+        #wrapper{
+            border: 5px solid rgb(20,22,25);
+            background-color: rgb(109,115,117);
+            border-radius: 20px;
+            width: 90%;
+            margin:0 auto;
+        }
+
+        #header{
+            padding: .5em 0;
+            margin-top: 0;;
+            text-align: center;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            width: 100%;
+            /*height: 100px;*/
+            background-color: rgb(54,71,84);
+        }
+
+        #footer{
+            padding-top: .6em;
+            text-align: center;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            width:100%;
+            height: 35px;
+            background-color: rgb(54,71,84);
+
+        }
+
+        #dimmer{
+            background: rgba(0,0,0,.90);
+            width:100%;
+            height: 100%;
+            position:fixed;
+            z-index:999;
+            display:none;
+            overflow:auto;
+        }
+
+
+        #display{
+            margin: 2% auto;
+            max-width: 400px;
+            height: auto;
+            border: 5px solid rgb(20,22,25);
+            background-color: rgb(130,157,180);
+            overflow:hidden;
+
+        }
+
+        #info_all{
+            background: rgb(111, 121, 124);
+            margin: 5% auto;
+            z-index: 999999;
+            width: 500px;
+            max-height: 450px;
+            border: 9px solid rgb(130,157,180);
+            border-radius: 10px;
+            overflow: auto;
+        }
+
+        .all_info_line{
+            display:block;
+        }
+
+        .all_info_prop{
+            margin-left: 1em;
+            text-align: left;
+            display:inline-block;
+        }
+
+        .all_info_val{
+            float:right;
+            display:inline-block;
+            margin-right: 1em;
+            text-align: right;
+
+        }
+        /******Start CSS for display******/
+        #info_all_header{
+            position:absolute;
+            height: 35px;
+            width:inherit;
+            font-size: xx-large;
+            background: rgb(54,71,84);
+        }
+
+        #name{
+            margin-left: 10px;
+            font-weight: bolder;
+            font-size:x-large;
+        }
+        #current{
+            font-size: large;
+            font-weight: bolder;
+            margin-left: 10px;
+            display: inline-block;
+        }
+        #time{
+            font-style:oblique ;
+            margin-left: 10px;}
+        #diff{
+            display: inline-block;
+            margin-left: 20px;
+
+        }
+        #diffpercent{
+            display: inline-block;
+            margin-left: 20px;
+        }
+        #yearhigh{}
+        #yearlow{}
+        #peratio{}
+        #marketcap{}
+        #open{}
+        #high{}
+        #low{}
+        #prevclose{}
+
+        ul{
+            width: 170px;
+            margin: 15px 15px;
+            padding: 0;
+            display:inline-block;
+        }
+        li{
+            text-align: right;
+            list-style-type: none;
+        }
+
+        .toLeft{
+            float:left;
+        }
+
+
+
+
+
+        /******End CSS for display******/
+
+        @media screen and (max-width: 400px){
+
+
+            li span{
+                display:block;
+                text-align: left;
+                clear:both;
+            }
+        }
+
+
+
+    </style>
+</head>
+<body>
+
+<div id="dimmer"></div>
+
+<div id="container">
+    <div id="wrapper">
+        <header id="header"><h1>Finance!</h1></header>
+             <div style="width:22%;margin:0 auto;padding: 10px 0; ">
+                <input type="text" id="search" autocomplete="off"/>
+                <button type="submit" value="Submit" id="searchBtn"> Search </button>
+            </div>
+        <div id="footer">Powered by Yahoo!</div>
+    </div>
+</div>
+
+
+
+</body>
+</html>
+
